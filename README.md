@@ -8,7 +8,7 @@ A Python tool for scanning GitHub organizations to detect exposed secrets using 
 
 -   Python 3.7+ with `requests` library
 -   TruffleHog - [https://github.com/trufflesecurity/trufflehog](https://github.com/trufflesecurity/trufflehog)
--   Kingfisher - [https://github.com/devops-kung-fu/kingfisher](https://github.com/mongodb/kingfisher)
+-   Kingfisher - [https://github.com/mongodb/kingfisher](https://github.com/mongodb/kingfisher)
 
 **GitHub Tokens (recommended):**
 

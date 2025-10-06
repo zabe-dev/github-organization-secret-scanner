@@ -22,7 +22,7 @@ class GitHubScanner:
         try:
             response = requests.get(url, headers=self.headers)
             if response.status_code == 403:
-                print(f'[{Colors.YELLOW}!{Colors.END}] Rate limit hit, waiting 60 seconds...')
+                print(f'[!] Rate limit hit, waiting 60 seconds...')
                 time.sleep(60)
                 response = requests.get(url, headers=self.headers)
 
@@ -76,7 +76,7 @@ class GitHubScanner:
             )
             if result.returncode != 0:
                 log_error(f'TruffleHog failed with return code {result.returncode}: {result.stderr.strip() or result.stdout.strip() or "Unknown error"}')
-                print(f'[{Colors.RED}!{Colors.END}] TruffleHog completed scan with errors')
+                print(f'[!] TruffleHog completed scan with errors')
                 return False, []
             with open(abs_output_file, 'w', encoding='utf-8') as f:
                 f.write(result.stdout)
@@ -86,11 +86,11 @@ class GitHubScanner:
             return True, secrets
         except subprocess.TimeoutExpired:
             log_error('TruffleHog scan timed out after 3 hours')
-            print(f'[{Colors.RED}!{Colors.END}] TruffleHog completed scan with errors')
+            print(f'[!] TruffleHog completed scan with errors')
             return False, []
         except Exception as e:
             log_error(f'TruffleHog error: {str(e)}')
-            print(f'[{Colors.RED}!{Colors.END}] TruffleHog completed scan with errors')
+            print(f'[!] TruffleHog completed scan with errors')
             return False, []
 
     def run_kingfisher(self, org, _, output_file):
@@ -117,7 +117,7 @@ class GitHubScanner:
             if result.returncode not in (0, 200, 205):
                 error_msg = result.stderr.strip() if result.stderr else result.stdout.strip() or 'Unknown error'
                 log_error(f'Kingfisher failed: {error_msg}')
-                print(f'[{Colors.RED}!{Colors.END}] Kingfisher completed scan with errors')
+                print(f'[!] Kingfisher completed scan with errors')
                 return False, []
             with open(abs_output_file, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
@@ -139,13 +139,13 @@ class GitHubScanner:
                     return True, valid_secrets
                 except json.JSONDecodeError as e:
                     log_error(f'Kingfisher JSON parsing error: {str(e)}')
-                    print(f'[{Colors.RED}!{Colors.END}] Kingfisher completed scan with errors')
+                    print(f'[!] Kingfisher completed scan with errors')
                     return False, []
         except subprocess.TimeoutExpired:
             log_error('Kingfisher scan timed out after 3 hours')
-            print(f'[{Colors.RED}!{Colors.END}] Kingfisher completed scan with errors')
+            print(f'[!] Kingfisher completed scan with errors')
             return False, []
         except Exception as e:
             log_error(f'Kingfisher error: {str(e)}')
-            print(f'[{Colors.RED}!{Colors.END}] Kingfisher completed scan with errors')
+            print(f'[!] Kingfisher completed scan with errors')
             return False, []

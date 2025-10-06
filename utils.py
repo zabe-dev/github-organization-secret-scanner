@@ -24,7 +24,7 @@ def save_results_to_files(th_secrets, kf_secrets, combined_results, th_output_fi
         return True
     except Exception as e:
         log_error(f'Error saving results: {str(e)}')
-        print(f'[{Colors.RED}!{Colors.END}] Failed to save results')
+        print(f'[!] Failed to save results')
         return False
 
 def cleanup_temp_files(temp_files):
@@ -34,9 +34,10 @@ def cleanup_temp_files(temp_files):
                 os.remove(temp_file)
             except Exception as e:
                 log_error(f'Failed to delete temporary file {temp_file}: {str(e)}')
-                print(f'[{Colors.RED}!{Colors.END}] Failed to delete temporary file')
+                print(f'[!] Failed to delete temporary file')
 
 def signal_handler(sig, frame, temp_files):
-    print(f'\n[{Colors.RED}*{Colors.END}] Script interrupted, cleaning up temporary files...')
+    sys.stdout.write('\r\033[K')
+    print(f'[!] Scan was interrupted...')
     cleanup_temp_files(temp_files)
     sys.exit(1)

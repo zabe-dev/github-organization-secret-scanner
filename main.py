@@ -16,6 +16,8 @@ from utils import (cleanup_temp_files, log_error, save_results_to_files,
 
 
 def main():
+    signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame, []))
+
     ghoss_dir = os.path.join(os.getcwd(), 'ghoss')
     os.makedirs(ghoss_dir, exist_ok=True)
 
@@ -24,10 +26,10 @@ def main():
     parser.add_argument('-t', '--target', metavar='ORGANIZATION', help='Single organization name to scan')
     args = parser.parse_args()
     if not args.list and not args.target:
-        print(f'[{Colors.RED}!{Colors.END}] Either --list/-l or --target/-t must be provided')
+        print(f'[!] Either --list/-l or --target/-t must be provided')
         sys.exit(1)
     if args.list and args.target:
-        print(f'[{Colors.RED}!{Colors.END}] Cannot use both --list/-l and --target/-t together')
+        print(f'[!] Cannot use both --list/-l and --target/-t together')
         sys.exit(1)
     scanner = GitHubScanner(CONFIG['TH_GITHUB_TOKEN'], CONFIG['KF_GITHUB_TOKEN'])
     temp_files = []
@@ -40,7 +42,7 @@ def main():
                 organizations = [line.strip() for line in f if line.strip()]
         except FileNotFoundError:
             log_error(f'Organization file {args.list} not found')
-            print(f'[{Colors.RED}!{Colors.END}] Failed loading organizations from file')
+            print(f'[!] Failed loading organizations from file')
             sys.exit(1)
     used_random_strings = set()
     total_organizations = len(organizations)
@@ -71,15 +73,15 @@ def main():
     all_th_secrets = []
     all_kf_secrets = []
     print()
-    print(f'[{Colors.BLUE}ℹ{Colors.END}] Loaded {Colors.BOLD}{total_organizations}{Colors.END} organization(s)')
+    print(f'[ℹ] Loaded {total_organizations} organization(s)')
     if CONFIG['TH_GITHUB_TOKEN']:
-        print(f'[{Colors.GREEN}✓{Colors.END}] TruffleHog GitHub token supplied')
+        print(f'[✓] TruffleHog GitHub token supplied')
     else:
-        print(f'[{Colors.YELLOW}!{Colors.END}] No TruffleHog GitHub token supplied')
+        print(f'[!] No TruffleHog GitHub token supplied')
     if CONFIG['KF_GITHUB_TOKEN']:
-        print(f'[{Colors.GREEN}✓{Colors.END}] Kingfisher GitHub token supplied')
+        print(f'[✓] Kingfisher GitHub token supplied')
     else:
-        print(f'[{Colors.YELLOW}!{Colors.END}] No Kingfisher GitHub token supplied')
+        print(f'[!] No Kingfisher GitHub token supplied')
     print()
     try:
         for i, organization in enumerate(organizations, 1):
@@ -91,21 +93,21 @@ def main():
             temp_th_output = f'ghoss/temp/temp_trufflehog_{random_string}.json'
             temp_kf_output = f'ghoss/temp/temp_kingfisher_{random_string}.json'
             temp_files.extend([temp_th_output, temp_kf_output])
-            print(f'[{Colors.PURPLE}#{Colors.END}] [{i}/{total_organizations}] Processing {Colors.BOLD}{organization}{Colors.END}')
+            print(f'[#] [{i}/{total_organizations}] Processing {organization}')
             orgs = scanner.search_orgs(organization)
             if orgs:
-                print(f'[{Colors.GREEN}✓{Colors.END}] Found {Colors.BOLD}{len(orgs)}{Colors.END} organizations')
+                print(f'[✓] Found {len(orgs)} organizations')
                 best_match = scanner.find_best_matching_org(organization, orgs)
                 if best_match:
                     best_match_index = orgs.index(best_match) if best_match in orgs[:10] else 0
-                    print(f'[{Colors.GREEN}✓{Colors.END}] Best match: {Colors.BOLD}{best_match}{Colors.END}')
-                    print(f'[{Colors.BLUE}?{Colors.END}] Use arrow keys to select organization:')
+                    print(f'[✓] Best match: {best_match}')
+                    print(f'[?] Use arrow keys to select organization:')
 
                     selected_index = get_arrow_key_selection(orgs, best_match_index)
                     selected_org = orgs[selected_index]
 
                     if selected_org in orgs:
-                        print(f'[{Colors.BLUE}*{Colors.END}] Scanning organization: {Colors.BOLD}{selected_org}{Colors.END}')
+                        print(f'[*] Scanning organization: {selected_org}')
                         th_success, th_secrets = scanner.run_trufflehog(selected_org, temp_th_output)
                         th_secrets = th_secrets if th_success else []
                         kf_success, kf_secrets = scanner.run_kingfisher(selected_org, organization, temp_kf_output)
@@ -123,20 +125,20 @@ def main():
                         all_results['results'].append(org_result)
                         if not th_secrets and not kf_secrets:
                             if th_success:
-                                print(f'[{Colors.YELLOW}!{Colors.END}] TruffleHog found no secrets')
+                                print(f'[!] TruffleHog found no secrets')
                             if kf_success:
-                                print(f'[{Colors.YELLOW}!{Colors.END}] Kingfisher found no secrets')
+                                print(f'[!] Kingfisher found no secrets')
                         else:
                             if th_secrets:
-                                print(f'[{Colors.GREEN}✓{Colors.END}] TruffleHog found {Colors.BOLD}{len(th_secrets)}{Colors.END} secrets')
+                                print(f'[✓] TruffleHog found {len(th_secrets)} secrets')
                             if kf_secrets:
-                                print(f'[{Colors.GREEN}✓{Colors.END}] Kingfisher found {Colors.BOLD}{len(kf_secrets)}{Colors.END} secrets')
+                                print(f'[✓] Kingfisher found {len(kf_secrets)} secrets')
                         if th_success or kf_success:
                             successful_scans += 1
                         else:
                             failed_scans += 1
                     else:
-                        print(f'[{Colors.RED}!{Colors.END}] Organization "{Colors.BOLD}{selected_org}{Colors.END}" not found')
+                        print(f'[!] Organization "{selected_org}" not found')
                         all_results['results'].append({
                             'organization': selected_org or organization or 'unknown',
                             'scan_status': 'org_not_found',
@@ -147,7 +149,7 @@ def main():
                         })
                         failed_scans += 1
                 else:
-                    print(f'[{Colors.YELLOW}!{Colors.END}] No matching organizations, skipping')
+                    print(f'[!] No matching organizations, skipping')
                     all_results['results'].append({
                         'organization': organization or 'unknown',
                         'scan_status': 'no_matching_orgs',
@@ -159,7 +161,7 @@ def main():
                     })
                     skipped_scans += 1
             else:
-                print(f'[{Colors.RED}!{Colors.END}] No organizations found')
+                print(f'[!] No organizations found')
                 all_results['results'].append({
                     'organization': organization or 'unknown',
                     'scan_status': 'no_orgs_found',
@@ -178,24 +180,23 @@ def main():
             'kingfisher_secrets_found': sum(result.get('kingfisher_secrets_count', 0) for result in all_results['results'])
         })
         save_results_to_files(all_th_secrets, all_kf_secrets, all_results, th_output_filename, kf_output_filename, combined_output_filename)
-        print(f'[{Colors.BLUE}ℹ{Colors.END}] Scan Summary:')
-        print(f'[{Colors.BLUE}ℹ{Colors.END}] Total organizations scanned: {Colors.BOLD}{total_organizations}{Colors.END}')
-        print(f'[{Colors.GREEN}✓{Colors.END}] Successful scans: {successful_scans}')
-        print(f'[{Colors.YELLOW}⚠{Colors.END}] Skipped scans: {skipped_scans}')
-        print(f'[{Colors.RED}✗{Colors.END}] Failed scans: {failed_scans}')
+        print(f'[ℹ] Scan Summary:')
+        print(f'[ℹ] Total organizations scanned: {total_organizations}')
+        print(f'[✓] Successful scans: {successful_scans}')
+        print(f'[⚠] Skipped scans: {skipped_scans}')
+        print(f'[✗] Failed scans: {failed_scans}')
         total_secrets = all_results['scan_info']['trufflehog_secrets_found'] + all_results['scan_info']['kingfisher_secrets_found']
         if total_secrets > 0:
-            print(f'[{Colors.GREEN}✓{Colors.END}] Total secrets found: {Colors.BOLD}{total_secrets}{Colors.END}')
-            print(f'[{Colors.GREEN}✓{Colors.END}] TruffleHog secrets: {Colors.BOLD}{all_results["scan_info"]["trufflehog_secrets_found"]}{Colors.END}')
-            print(f'[{Colors.GREEN}✓{Colors.END}] Kingfisher secrets: {Colors.BOLD}{all_results["scan_info"]["kingfisher_secrets_found"]}{Colors.END}')
+            print(f'[✓] Total secrets found: {total_secrets}')
+            print(f'[✓] TruffleHog secrets: {all_results["scan_info"]["trufflehog_secrets_found"]}')
+            print(f'[✓] Kingfisher secrets: {all_results["scan_info"]["kingfisher_secrets_found"]}')
         if total_organizations > 0:
             success_rate = (successful_scans/total_organizations*100)
-            color = Colors.GREEN if success_rate >= 70 else Colors.YELLOW if success_rate >= 50 else Colors.RED
-            print(f'[{Colors.BLUE}ℹ{Colors.END}] Success rate: {color}{success_rate:.1f}%{Colors.END}')
+            print(f'[ℹ] Success rate: {success_rate:.1f}%')
     finally:
-        print(f'[{Colors.BLUE}*{Colors.END}] Cleaning up temporary files...')
+        print(f'[*] Cleaning up temporary files...')
         cleanup_temp_files(temp_files)
-        print(f'[{Colors.GREEN}✓{Colors.END}] Scan process completed.\n')
+        print(f'[✓] Scan process completed.\n')
 
 if __name__ == '__main__':
     main()

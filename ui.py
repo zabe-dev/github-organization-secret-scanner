@@ -12,11 +12,11 @@ def get_arrow_key_selection(orgs, best_match_index):
 
     for i, org in enumerate(orgs[:10]):
         if i == selected_index:
-            print(f'    {Colors.GREEN}► {i+1}. {org}{Colors.END}')
+            print(f'    {Colors.DIM}► {i+1}. {org}\033[0m')
         else:
-            print(f'      {Colors.CYAN}{i+1}.{Colors.END} {org}')
+            print(f'      {i+1}. {org}')
     if len(orgs) > 10:
-        print(f'      {Colors.CYAN}...{Colors.END} and {Colors.BOLD}{len(orgs) - 10}{Colors.END} more')
+        print(f'      ... and {len(orgs) - 10} more')
 
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
@@ -47,14 +47,16 @@ def get_arrow_key_selection(orgs, best_match_index):
                             for i, org in enumerate(orgs[:10]):
                                 sys.stdout.write('\r\033[K')
                                 if i == selected_index:
-                                    sys.stdout.write(f'    {Colors.GREEN}► {i+1}. {org}{Colors.END}')
+                                    sys.stdout.write(f'    {Colors.DIM}► {i+1}. {org}\033[0m')
                                 else:
-                                    sys.stdout.write(f'      {Colors.CYAN}{i+1}.{Colors.END} {org}')
-                                sys.stdout.write('\033[B\r')
+                                    sys.stdout.write(f'      {i+1}. {org}')
+                                sys.stdout.write('\n')
+                                sys.stdout.flush()
                             if len(orgs) > 10:
                                 sys.stdout.write('\r\033[K')
-                                sys.stdout.write(f'      {Colors.CYAN}...{Colors.END} and {Colors.BOLD}{len(orgs) - 10}{Colors.END} more')
-                                sys.stdout.write('\033[B\r')
+                                sys.stdout.write(f'      ... and {len(orgs) - 10} more')
+                                sys.stdout.write('\n')
+                                sys.stdout.flush()
 
                             sys.stdout.write(f'\033[{num_lines}A')
                             sys.stdout.flush()
@@ -67,14 +69,16 @@ def get_arrow_key_selection(orgs, best_match_index):
                             for i, org in enumerate(orgs[:10]):
                                 sys.stdout.write('\r\033[K')
                                 if i == selected_index:
-                                    sys.stdout.write(f'    {Colors.GREEN}► {i+1}. {org}{Colors.END}')
+                                    sys.stdout.write(f'    {Colors.DIM}► {i+1}. {org}\033[0m')
                                 else:
-                                    sys.stdout.write(f'      {Colors.CYAN}{i+1}.{Colors.END} {org}')
-                                sys.stdout.write('\033[B\r')
+                                    sys.stdout.write(f'      {i+1}. {org}')
+                                sys.stdout.write('\n')
+                                sys.stdout.flush()
                             if len(orgs) > 10:
                                 sys.stdout.write('\r\033[K')
-                                sys.stdout.write(f'      {Colors.CYAN}...{Colors.END} and {Colors.BOLD}{len(orgs) - 10}{Colors.END} more')
-                                sys.stdout.write('\033[B\r')
+                                sys.stdout.write(f'      ... and {len(orgs) - 10} more')
+                                sys.stdout.write('\n')
+                                sys.stdout.flush()
 
                             sys.stdout.write(f'\033[{num_lines}A')
                             sys.stdout.flush()
@@ -84,7 +88,9 @@ def get_arrow_key_selection(orgs, best_match_index):
                     raise KeyboardInterrupt
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        sys.stdout.write('\r')
         sys.stdout.write(f'\033[{num_lines}B')
+        sys.stdout.write('\033[0m')
         sys.stdout.flush()
 
     return selected_index

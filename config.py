@@ -6,11 +6,12 @@ CONFIG = {
 }
 
 class Colors:
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    PURPLE = '\033[95m'
-    CYAN = '\033[96m'
-    END = '\033[0m'
-    BOLD = '\033[1m'
+    RED = ''
+    GREEN = ''
+    YELLOW = ''
+    BLUE = ''
+    PURPLE = ''
+    CYAN = ''
+    END = ''
+    BOLD = ''
+    DIM = '\033[2m'

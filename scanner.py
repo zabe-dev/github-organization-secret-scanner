@@ -10,12 +10,23 @@ from utils import log_error
 
 
 class GitHubScanner:
-    def __init__(self, github_token=None, kf_github_token=None):
+    def __init__(self, github_token=None, kf_github_token=None, timeout=None):
         self.github_token = github_token
         self.kf_github_token = kf_github_token
+        self.timeout = timeout
         self.headers = {'Accept': 'application/vnd.github.v3+json'}
         if github_token:
             self.headers['Authorization'] = f'token {github_token}'
+
+    def get_repo_count(self, org):
+        url = f'https://api.github.com/orgs/{org}'
+        try:
+            response = requests.get(url, headers=self.headers)
+            if response.status_code == 200:
+                return response.json().get('public_repos', 0)
+            return 0
+        except Exception:
+            return 0
 
     def search_orgs(self, organization):
         url = f'https://api.github.com/search/users?q={organization.replace(" ", "+")}+type:org'
@@ -72,7 +83,7 @@ class GitHubScanner:
             cmd.append(f'--token={self.github_token}')
         try:
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=10800
+                cmd, capture_output=True, text=True, timeout=self.timeout
             )
             if result.returncode != 0:
                 log_error(f'TruffleHog failed with return code {result.returncode}: {result.stderr.strip() or result.stdout.strip() or "Unknown error"}')
@@ -85,7 +96,8 @@ class GitHubScanner:
             secrets = self.parse_trufflehog_output(content)
             return True, secrets
         except subprocess.TimeoutExpired:
-            log_error('TruffleHog scan timed out after 3 hours')
+            timeout_msg = f'TruffleHog scan timed out after {self.timeout} seconds' if self.timeout else 'TruffleHog scan timed out'
+            log_error(timeout_msg)
             print(f'[!] TruffleHog completed scan with errors')
             return False, []
         except Exception as e:
@@ -112,7 +124,7 @@ class GitHubScanner:
 
         try:
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=10800, env=env
+                cmd, capture_output=True, text=True, timeout=self.timeout, env=env
             )
             if result.returncode not in (0, 200, 205):
                 error_msg = result.stderr.strip() if result.stderr else result.stdout.strip() or 'Unknown error'
@@ -142,7 +154,8 @@ class GitHubScanner:
                     print(f'[!] Kingfisher completed scan with errors')
                     return False, []
         except subprocess.TimeoutExpired:
-            log_error('Kingfisher scan timed out after 3 hours')
+            timeout_msg = f'Kingfisher scan timed out after {self.timeout} seconds' if self.timeout else 'Kingfisher scan timed out'
+            log_error(timeout_msg)
             print(f'[!] Kingfisher completed scan with errors')
             return False, []
         except Exception as e:

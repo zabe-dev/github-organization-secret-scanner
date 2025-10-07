@@ -21,27 +21,29 @@ def main():
     ghoss_dir = os.path.join(os.getcwd(), 'ghoss')
     os.makedirs(ghoss_dir, exist_ok=True)
 
-    parser = argparse.ArgumentParser(description='GitHub organization secret scanner')
-    parser.add_argument('-l', '--list', metavar='FILE', help='Path to file containing organization names')
-    parser.add_argument('-t', '--target', metavar='ORGANIZATION', help='Single organization name to scan')
+    parser = argparse.ArgumentParser(description='GitHub organization secret scanner', add_help=False)
+    parser.add_argument('-oL', metavar='FILE', dest='orglist', help='Path to file containing organization names')
+    parser.add_argument('-o', metavar='ORGANIZATION', dest='org', help='Single organization name to scan')
+    parser.add_argument('-t', metavar='SECONDS', type=int, dest='timeout', help='Timeout in seconds for scanning operations')
+    parser.add_argument('-h', action='help', help='Show this help message and exit')
     args = parser.parse_args()
-    if not args.list and not args.target:
-        print(f'[!] Either --list/-l or --target/-t must be provided')
+    if not args.orglist and not args.org:
+        print(f'[!] Either -oL or -o must be provided')
         sys.exit(1)
-    if args.list and args.target:
-        print(f'[!] Cannot use both --list/-l and --target/-t together')
+    if args.orglist and args.org:
+        print(f'[!] Cannot use both -oL and -o together')
         sys.exit(1)
-    scanner = GitHubScanner(CONFIG['TH_GITHUB_TOKEN'], CONFIG['KF_GITHUB_TOKEN'])
+    scanner = GitHubScanner(CONFIG['TH_GITHUB_TOKEN'], CONFIG['KF_GITHUB_TOKEN'], args.timeout)
     temp_files = []
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame, temp_files))
-    if args.target:
-        organizations = [args.target]
+    if args.org:
+        organizations = [args.org]
     else:
         try:
-            with open(args.list, 'r', encoding='utf-8') as f:
+            with open(args.orglist, 'r', encoding='utf-8') as f:
                 organizations = [line.strip() for line in f if line.strip()]
         except FileNotFoundError:
-            log_error(f'Organization file {args.list} not found')
+            log_error(f'Organization file {args.orglist} not found')
             print(f'[!] Failed loading organizations from file')
             sys.exit(1)
     used_random_strings = set()
@@ -53,7 +55,7 @@ def main():
         'scan_info': {
             'timestamp': datetime.now().isoformat(),
             'total_organizations': total_organizations,
-            'organizations_file': args.list if args.list else args.target,
+            'organizations_file': args.orglist if args.orglist else args.org,
             'successful_scans': 0,
             'failed_scans': 0,
             'skipped_scans': 0,
@@ -107,7 +109,11 @@ def main():
                     selected_org = orgs[selected_index]
 
                     if selected_org in orgs:
-                        print(f'[*] Scanning organization: {selected_org}')
+                        repo_count = scanner.get_repo_count(selected_org)
+                        if repo_count > 0:
+                            print(f'[*] Scanning {repo_count} code repositories...')
+                        else:
+                            print(f'[*] Scanning organization: {selected_org}')
                         th_success, th_secrets = scanner.run_trufflehog(selected_org, temp_th_output)
                         th_secrets = th_secrets if th_success else []
                         kf_success, kf_secrets = scanner.run_kingfisher(selected_org, organization, temp_kf_output)

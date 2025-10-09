@@ -13,8 +13,8 @@ A Python tool for scanning GitHub organizations to detect exposed secrets using 
 **GitHub Tokens (recommended):**
 
 ```bash
-export TH_GITHUB_TOKEN="your_token"
-export KF_GITHUB_TOKEN="your_token"
+export TH_GITHUB_TOKEN="your_api_token"
+export KF_GITHUB_TOKEN="your_api_token"
 ```
 
 ## Installation
@@ -27,13 +27,13 @@ export KF_GITHUB_TOKEN="your_token"
 **Single organization:**
 
 ```bash
-./main.py -t "organization-name"
+./main.py -o "organization-name"
 ```
 
 **Multiple organizations:**
 
 ```bash
-./main.py -l organizations.txt
+./main.py -oL organizations.txt
 ```
 
 ## Output
